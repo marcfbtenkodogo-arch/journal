@@ -1,0 +1,165 @@
+
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>Trading Journal Pro</title>
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<style>
+body{font-family:Arial;margin:0;background:#0f1220;color:#eee}
+header{padding:15px;font-size:22px;font-weight:bold;background:#151935}
+.container{padding:20px}
+grid{display:grid}
+.stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:15px;margin-bottom:20px}
+.card{background:#1b2042;padding:15px;border-radius:10px}
+table{width:100%;border-collapse:collapse;background:#1b2042;border-radius:10px;overflow:hidden}
+th,td{padding:10px;border-bottom:1px solid #333;text-align:center}
+input,select{padding:6px;border-radius:6px;border:none}
+button{padding:8px 12px;border:none;border-radius:6px;background:#5a6cff;color:white;cursor:pointer}
+form{margin-bottom:20px}
+canvas{background:white;border-radius:10px;padding:10px}
+</style>
+</head>
+<body>
+
+<header>📊 Trading Journal Pro</header>
+
+<div class="container">
+
+<div class="stats">
+<div class="card">Trades: <span id="trades">0</span></div>
+<div class="card">Winrate: <span id="winrate">0%</span></div>
+<div class="card">Profit: <span id="profit">0</span></div>
+<div class="card">Loss: <span id="loss">0</span></div>
+</div>
+
+<form id="tradeForm">
+<input type="date" id="date" required>
+<input placeholder="Pair" id="pair" required>
+<select id="direction">
+<option>Buy</option>
+<option>Sell</option>
+</select>
+<input type="number" placeholder="Profit / Loss" id="result" required>
+<select id="emotion">
+<option>Calm</option>
+<option>FOMO</option>
+<option>Fear</option>
+<option>Confident</option>
+</select>
+<button type="submit">Add Trade</button>
+</form>
+
+<table>
+<thead>
+<tr>
+<th>Date</th>
+<th>Pair</th>
+<th>Direction</th>
+<th>Result</th>
+<th>Emotion</th>
+</tr>
+</thead>
+<tbody id="tableBody"></tbody>
+</table>
+
+<br><br>
+<canvas id="equityChart"></canvas>
+
+</div>
+
+<script>
+
+let trades = JSON.parse(localStorage.getItem("trades")||"[]");
+
+const body = document.getElementById("tableBody");
+
+function render(){
+
+body.innerHTML="";
+
+let profit=0;
+let loss=0;
+let wins=0;
+
+let equity=[];
+let balance=0;
+
+trades.forEach(t=>{
+
+balance+=Number(t.result);
+equity.push(balance);
+
+if(t.result>0){profit+=Number(t.result);wins++;}
+if(t.result<0){loss+=Number(t.result);}
+
+body.innerHTML+=`
+<tr>
+<td>${t.date}</td>
+<td>${t.pair}</td>
+<td>${t.direction}</td>
+<td>${t.result}</td>
+<td>${t.emotion}</td>
+</tr>
+`;
+
+});
+
+document.getElementById("trades").innerText=trades.length;
+
+document.getElementById("profit").innerText=profit;
+document.getElementById("loss").innerText=loss;
+
+let winrate = trades.length? Math.round((wins/trades.length)*100):0;
+
+document.getElementById("winrate").innerText=winrate+"%";
+
+drawChart(equity);
+
+localStorage.setItem("trades",JSON.stringify(trades));
+
+}
+
+document.getElementById("tradeForm").onsubmit=e=>{
+
+e.preventDefault();
+
+let trade={
+date:date.value,
+pair:pair.value,
+direction:direction.value,
+result:Number(result.value),
+emotion:emotion.value
+};
+
+trades.push(trade);
+
+render();
+
+e.target.reset();
+
+};
+
+let chart;
+
+function drawChart(data){
+
+if(chart){chart.destroy();}
+
+chart=new Chart(document.getElementById("equityChart"),{
+type:"line",
+data:{
+labels:data.map((_,i)=>i+1),
+datasets:[{label:"Equity",data:data}]
+}
+});
+
+}
+
+render();
+
+</script>
+
+</body>
+</html>
